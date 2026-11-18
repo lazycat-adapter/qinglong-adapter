@@ -65,7 +65,8 @@ application:
 services:
   gateway:
     # Published baseline. The executor replaces this with the verified custom image.
-    image: registry.lazycat.cloud/qinglong:0.1.2
+    # upstream: ttl.sh/qinglong-lazycat-9dc7bd340b11:24h@sha256:8cb0f3b1c282bb5cc2e3e88c23d6f802591306d43aad928bca0e16a1598bbc44
+    image: registry.lazycat.cloud/peter/qinglong-lazycat-9dc7bd340b11:155d78897b206b0f
     binds:
       - /lzcapp/var/qinglong:/ql/data
     setup_script: |-

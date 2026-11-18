@@ -1,6 +1,6 @@
 package: cloud.lazycat.app.qinglong
 name: 青龙面板
-version: 0.1.3
+version: 2.24.0
 description: 支持 Python、JavaScript、Shell 和 TypeScript 的定时任务管理平台。
 homepage: https://github.com/whyour/qinglong
 author: whyour
