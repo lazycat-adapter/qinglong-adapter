@@ -1,0 +1,75 @@
+name: Update QingLong for LazyCat
+run-name: ${{ (github.event_name == 'push' || inputs.dry-run) && 'QingLong → LazyCat [仅检查]' || 'QingLong → LazyCat [验证定制镜像、打包并送审]' }}
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update.yml
+      - content/**
+      - image/**
+      - scripts/**
+      - tests/**
+      - requirements-test.txt
+      - lazycat-action.yml
+      - lzc-build.yml
+      - lzc-manifest.yml
+      - package.yml
+      - icon.png
+  schedule:
+    # UTC. Beijing 03:43 / 09:43 / 15:43 / 21:43.
+    - cron: '43 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 勾选仅检查，取消勾选后构建定制镜像、验证升级、打包并送审。
+        type: boolean
+        default: true
+      test-tag:
+        description: 仅检查时可填写稳定标签，额外构建镜像并运行升级测试。
+        type: string
+      retry-rejected:
+        description: 修复后重试曾被拒绝的源版本，需同时取消仅检查。
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: qinglong-lazycat-update
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test deployment and packaging conditions
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements-test.txt
+          python -B -m unittest discover -s tests -v
+          node --test tests/injects.test.cjs
+      - name: Compile and test the stable release without pushing
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run && inputs.test-tag != ''
+        env:
+          QINGLONG_TEST_TAG: ${{ inputs.test-tag }}
+        run: python -B scripts/prepare.py --test-tag "$QINGLONG_TEST_TAG"
+  update:
+    needs: validate
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: wcaqrl/lazycat-action/.github/workflows/lazycat.yml@v1
+    with:
+      config: lazycat-action.yml
+      operation: auto
+      runner: ubuntu-24.04
+      toolchains: docker
+      enable-qemu: false
+      dry-run: ${{ github.event_name == 'push' || inputs.dry-run || false }}
+      retry-rejected: ${{ github.event_name == 'workflow_dispatch' && inputs.retry-rejected || false }}
+    secrets:
+      LZC_API_TOKEN: ${{ secrets.LZC_API_TOKEN }}

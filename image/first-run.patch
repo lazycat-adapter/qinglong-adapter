@@ -1,0 +1,118 @@
+diff --git a/src/pages/initialization/index.tsx b/src/pages/initialization/index.tsx
+index 1fd9e64..f06d6f4 100644
+--- a/src/pages/initialization/index.tsx
++++ b/src/pages/initialization/index.tsx
+@@ -145,14 +145,19 @@ const Initialization = () => {
+     {
+       title: intl.get('账户设置'),
+       content: (
+-        <Form onFinish={submitAccountSetting} layout="vertical">
++        <Form
++          key="lazycat-account-setup"
++          onFinish={submitAccountSetting}
++          layout="vertical"
++          initialValues={{ username: 'admin' }}
++        >
+           <Form.Item
+             label={intl.get('用户名')}
+             name="username"
+             rules={[{ required: true }]}
+             style={{ maxWidth: 350 }}
+           >
+-            <Input placeholder={intl.get('用户名')} />
++            <Input placeholder={intl.get('用户名')} autoComplete="username" />
+           </Form.Item>
+           <Form.Item
+             label={intl.get('密码')}
+@@ -167,7 +172,10 @@ const Initialization = () => {
+             hasFeedback
+             style={{ maxWidth: 350 }}
+           >
+-            <Input type="password" placeholder={intl.get('密码')} />
++            <Input.Password
++              placeholder={intl.get('密码')}
++              autoComplete="new-password"
++            />
+           </Form.Item>
+           <Form.Item
+             name="confirm"
+@@ -191,7 +199,7 @@ const Initialization = () => {
+               }),
+             ]}
+           >
+-            <Input.Password placeholder={intl.get('确认密码')} />
++            <Input.Password placeholder={intl.get('确认密码')} autoComplete="new-password" />
+           </Form.Item>
+           <Button type="primary" htmlType="submit" loading={loading}>
+             {intl.get('提交')}
+@@ -216,7 +224,8 @@ const Initialization = () => {
+             <Button
+               type="primary"
+               onClick={() => {
+-                window.location.reload();
++                // The microserver injects credentials into a document loaded at /login.
++                window.location.replace('/login');
+               }}
+             >
+               {intl.get('去登录')}
+diff --git a/src/pages/login/index.tsx b/src/pages/login/index.tsx
+index 24ab46a..eec5ba6 100644
+--- a/src/pages/login/index.tsx
++++ b/src/pages/login/index.tsx
+@@ -192,11 +192,13 @@ const Login = () => {
+                   isDemoEnv ? ': admin' : ''
+                 }`}
+                 autoFocus
++                autoComplete="username"
+               />
+             </FormItem>
+             <FormItem name="password" label={intl.get('密码')} hasFeedback>
+               <Input
+                 type="password"
++                autoComplete="current-password"
+                 placeholder={`${intl.get('密码')}${isDemoEnv ? ': 123' : ''}`}
+               />
+             </FormItem>
+diff --git a/src/pages/setting/security.tsx b/src/pages/setting/security.tsx
+index 29b92f0..f5e4842 100644
+--- a/src/pages/setting/security.tsx
++++ b/src/pages/setting/security.tsx
+@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
+ import { Typography, Input, Form, Button, message, Avatar, Upload } from 'antd';
+ import { request } from '@/utils/http';
+ import config from '@/utils/config';
+-import { history } from '@umijs/max';
+ import QRCode from 'qrcode.react';
+ import { PageLoading } from '@ant-design/pro-layout';
+ import { UploadOutlined, UserOutlined } from '@ant-design/icons';
+@@ -29,7 +28,7 @@ const SecuritySettings = ({ user, userChange }: any) => {
+       .then(({ code, data }) => {
+         if (code === 200) {
+           localStorage.removeItem(config.authKey);
+-          history.push('/login');
++          window.location.replace('/login');
+         }
+       })
+       .catch((error: any) => {
+diff --git a/src/utils/http.tsx b/src/utils/http.tsx
+index 466dc08..52a359f 100644
+--- a/src/utils/http.tsx
++++ b/src/utils/http.tsx
+@@ -52,7 +52,7 @@ const errorHandler = function (
+       localStorage.removeItem(config.authKey);
+       if (history.location.pathname !== '/login') {
+         message.error(intl.get('登录已过期，请重新登录'));
+-        history.push('/login');
++        window.location.replace('/login');
+       }
+     } else {
+       if (typeof error.config?.onError === 'function') {
+@@ -109,7 +109,7 @@ _request.interceptors.response.use(async (response) => {
+   } else if (responseStatus === 401) {
+     localStorage.removeItem(config.authKey);
+     if (history.location.pathname !== '/login') {
+-      history.push('/login');
++      window.location.replace('/login');
+     }
+   } else {
+     try {

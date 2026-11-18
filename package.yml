@@ -1,0 +1,24 @@
+package: cloud.lazycat.app.qinglong
+name: 青龙面板
+version: 0.1.3
+description: 支持 Python、JavaScript、Shell 和 TypeScript 的定时任务管理平台。
+homepage: https://github.com/whyour/qinglong
+author: whyour
+license: Apache-2.0
+min_os_version: 1.5.0
+permissions:
+  optional:
+    - document.read
+locales:
+  zh:
+    name: 青龙面板
+    description: 支持 Python、JavaScript、Shell 和 TypeScript 的定时任务管理平台。
+    usage: |
+      首次打开请设置青龙管理员密码，后续由懒猫记住成功登录的凭据。
+      从旧版升级时，请先允许青龙读取用户文稿，以便导入旧工作区。
+  en:
+    name: QingLong
+    description: A scheduling panel for Python, JavaScript, Shell and TypeScript tasks.
+    usage: |
+      Set a QingLong administrator password on first launch. LazyCat remembers successful sign-in credentials for future visits.
+      When upgrading from the legacy package, grant QingLong read access to user documents before opening it so the old workspace can be imported.

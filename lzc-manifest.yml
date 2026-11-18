@@ -1,0 +1,76 @@
+usage: |
+  首次打开请设置青龙管理员密码，后续由懒猫记住成功登录的凭据。
+  从旧版升级时，请先允许青龙读取用户文稿，以便导入旧工作区。
+application:
+  subdomain: qinglong
+  background_task: true
+  multi_instance: true
+  routes:
+    - /=http://gateway.cloud.lazycat.app.qinglong.lzcapp:5700
+  injects:
+    # Keep submitted credentials scoped to this authenticated microserver user.
+    - id: qinglong-capture-credentials
+      "on": request
+      auth_required: true
+      when: [/api/user/init, /api/user/login, /api/user/two-factor/login, /api/user]
+      do: |
+        if (!ctx.safe_uid) return;
+        const { path, method } = ctx.request;
+        const login = (path === "/api/user/login" && method === "POST")
+          || (path === "/api/user/two-factor/login" && method === "PUT");
+        const account = (path === "/api/user/init" || path === "/api/user") && method === "PUT";
+        if (!login && !account) return;
+
+        let payload;
+        try { payload = ctx.body.getJSON(); } catch { return; }
+        const { username, password } = payload || {};
+        if (typeof username !== "string" || !username || typeof password !== "string" || !password) return;
+        ctx.flow.set("qinglong.pending", { username, password, login });
+    # QingLong also returns HTTP 200 for some application-level login errors.
+    - id: qinglong-save-verified-credentials
+      "on": response
+      auth_required: true
+      when: [/api/user/init, /api/user/login, /api/user/two-factor/login, /api/user]
+      do: |
+        if (!ctx.safe_uid || ctx.status !== 200) return;
+        const pending = ctx.flow.get("qinglong.pending");
+        if (!pending) return;
+
+        let result;
+        try { result = ctx.body.getJSON(); } catch { return; }
+        if (!result || result.code !== 200) return;
+        if (pending.login && (typeof result.data?.token !== "string" || !result.data.token)) return;
+        ctx.persist.set("qinglong.username", pending.username);
+        ctx.persist.set("qinglong.password", pending.password);
+    - id: qinglong-login
+      "on": browser
+      auth_required: true
+      when: [/login]
+      do:
+        - src: builtin://simple-inject-password
+          params:
+            user:
+              $persist: qinglong.username
+            password:
+              $persist: qinglong.password
+            userSelector: 'input[autocomplete="username"]'
+            passwordSelector: 'input[autocomplete="current-password"]'
+            formSelector: 'form:has(input[autocomplete="current-password"])'
+            submitSelector: 'button[type="submit"]'
+            requireUser: true
+            autoSubmit: true
+            submitMode: requestSubmit
+            retryCount: 10
+            retryIntervalMs: 300
+services:
+  gateway:
+    # Published baseline. The executor replaces this with the verified custom image.
+    image: registry.lazycat.cloud/qinglong:0.1.2
+    binds:
+      - /lzcapp/var/qinglong:/ql/data
+    setup_script: |-
+      set -e
+      /bin/sh /lzcapp/pkg/content/migrate-workspace.sh /lzcapp/run/mnt/home/.ql /ql/data
+ext_config:
+  # Only used to import workspaces created by the published legacy LPK.
+  enable_document_access: true
