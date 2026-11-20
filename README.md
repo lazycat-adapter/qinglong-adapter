@@ -1,6 +1,6 @@
 # 青龙面板 · 懒猫微服自动更新适配器
 
-维护懒猫官方应用商店现有应用 `cloud.lazycat.app.qinglong`。上游是 [whyour/qinglong](https://github.com/whyour/qinglong)，共享工作流使用 [wcaqrl/lazycat-action@v1](https://github.com/wcaqrl/lazycat-action)。
+维护懒猫官方应用商店现有应用 `cloud.lazycat.app.qinglong`。上游是 [whyour/qinglong](https://github.com/whyour/qinglong)，共享工作流使用组织内的 [lazycat-adapter/lazycat-action@v1](https://github.com/lazycat-adapter/lazycat-action)。
 
 ## 定制与构建
 
@@ -15,7 +15,7 @@
 
 ## 使用和测试
 
-推送到 `main` 触发仅检查。GitHub 计划任务每六小时检查，有新版本且通过验证时送审。手动运行 **Update QingLong for LazyCat** 时，默认勾选 `dry-run`。可填写 `test-tag` 额外运行真实镜像构建与本地升级测试，或者取消 `dry-run` 执行官方发布流程。开发者 PAT 配置在 Actions 的 Repository secret `LZC_API_TOKEN`。
+推送到 `main` 触发仅检查。GitHub 计划任务每六小时检查，有新版本且通过验证时送审。手动运行 **Update QingLong for LazyCat** 时，默认勾选 `dry-run`。可填写 `test-tag` 额外运行真实镜像构建与本地升级测试，或者取消 `dry-run` 执行官方发布流程。开发者 PAT 配置在 `lazycat-adapter` 组织的 Actions Secret `LZC_API_TOKEN`，并授权给本仓库。
 
 ```bash
 python3 -m venv .lazycat-action/venv
